@@ -1,4 +1,4 @@
-# Reinforcement learning algorithm experimentation in Pytorch
+# Reinforcement learning algorithm experimentations in Pytorch
 
 Just testing out different algorithms with different environment.
 
