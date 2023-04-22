@@ -23,7 +23,7 @@ class DQNModel(nn.Module):
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """
         Called with either one element to determine next action, or a batch
-        during optimization. 
+        during optimization.
         Args:
             state: The current state of the game.
         Returns:
