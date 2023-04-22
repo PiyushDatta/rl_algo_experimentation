@@ -1,6 +1,7 @@
 # Reinforcement learning algorithm experimentations in Pytorch
 
-Just testing out different algorithms with different environment.
+Just testing out different algorithms with different environments.
+Using Pytorch.
 
 ## To run
 
