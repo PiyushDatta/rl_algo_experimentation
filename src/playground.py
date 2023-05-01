@@ -10,9 +10,10 @@ import gymnasium as gym
 import torch
 
 from src.agent import Agent
-from src.util import AgentConfig, AgentsEnum, MetricsEnum
 from src.dqn.dqn_agent import DQNAgent
 from src.dueling_dqn.dueling_dqn_agent import DuelingDQNAgent
+from src.rainbow_dqn.rainbow_dqn_agent import RainbowDQNAgent
+from src.util_cls import AgentConfig, AgentsEnum, MetricsEnum
 
 # Set up matplotlib and check if we're in an IPython environment.
 is_ipython = "inline" in matplotlib.get_backend()
@@ -30,25 +31,27 @@ class Playground:
     Args:
         gym_env (gym.Env): Gym environment.
         weights_file (str): Path to the file where the weights will be saved/loaded.
-        agent_type (AgentsEnum): Type of agent we should create.
+        device (torch.device): CUDA GPU or CPU.
+        agent (Agent): Type of agent we should create (DQN, Dueling DQN, etc).
         config (AgentConfig): Configuration/Hyperparameters of the agent and model.
 
     Methods:
         train(self, episodes: int, should_plot: bool) -> None:
-        Trains the agent and network through all the episodes.
+            Trains the agent and network through all the episodes.
 
         validate(self, episodes: int, should_plot: bool) -> None:
-        Validate the agent and network against the set episodes.
+            Validate the agent and network against the set episodes.
 
         clear_metrics(self) -> None:
-        Clear metrics before starting.
+            Clear metrics before starting.
     """
 
     def __init__(
         self,
         gym_env: gym.Env,
         weights_file: str,
-        agent_type: AgentsEnum,
+        device: torch.device,
+        agent: Agent,
         config: AgentConfig,
     ):
         self.env = gym_env
@@ -58,14 +61,8 @@ class Playground:
         self.action_size = self.env.action_space.n
         self.weights_file = weights_file
         self.config = config
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.agent: Agent = self._get_agent(
-            agent_type=agent_type,
-            state_size=self.state_size,
-            action_size=self.action_size,
-            weights_file=weights_file,
-            config=config,
-        )
+        self.device = device
+        self.agent: Agent = agent
         # Metrics
         self.metric_log = {
             MetricsEnum.DurationsMetric: [],
@@ -101,35 +98,6 @@ class Playground:
         """
         for key in self.metric_log:
             self.metric_log[key] = []
-
-    def _get_agent(
-        self,
-        agent_type: AgentsEnum,
-        state_size: int,
-        action_size: int,
-        weights_file: str,
-        config: AgentConfig,
-    ) -> Agent:
-        """
-        Returns an deep learning agent.
-        """
-        if agent_type == AgentsEnum.DQN_AGENT:
-            return DQNAgent(
-                device=self.device,
-                state_size=state_size,
-                action_size=action_size,
-                weights_file=weights_file,
-                config=config,
-            )
-        elif agent_type == AgentsEnum.DUELING_DQN_AGENT:
-            return DuelingDQNAgent(
-                device=self.device,
-                state_size=state_size,
-                action_size=action_size,
-                weights_file=weights_file,
-                config=config,
-            )
-        raise ValueError(f"No agent of type {agent_type} found")
 
     def _play_episodes(self, episodes: int, should_plot: bool, train: bool) -> None:
         """

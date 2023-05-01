@@ -10,7 +10,7 @@ import torch.optim as optim
 from src.agent import Agent
 from src.dqn.dqn_model import DQNModel
 from src.replay_memory import ReplayMemory
-from src.util import AgentConfig, Experience
+from src.util_cls import AgentConfig, Experience
 
 
 class DQNAgent(Agent):
@@ -82,7 +82,11 @@ class DQNAgent(Agent):
         self.eps_threshold = self.config.epsilon_start
 
     def take_action(
-        self, env: gym.Env, state: torch.Tensor, steps_done: int, train: bool
+        self,
+        env: gym.Env,
+        state: torch.Tensor,
+        steps_done: int = -1,
+        train: bool = False,
     ) -> torch.Tensor:
         """
         Choose an action using the epsilon-greedy policy.

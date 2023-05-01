@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from torch import Tensor
+from gymnasium import Env
 
 
 class Agent(metaclass=ABCMeta):
@@ -13,11 +14,15 @@ class Agent(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def take_action(self) -> Tensor:
+    def take_action(self, env: Env, state: Tensor, train: bool = False) -> Tensor:
         """
         Agent making an action in the environment.
 
-        Args: Up to implementation class.
+        Args:
+            gym_env (Env): Gym environment.
+            state (Tensor): The current state of the game.
+            train (bool): True, if the Agent is trying to learn and adjust
+                          it's weights.
 
         Returns: A tensor representing the chosen action.
         """

@@ -1,17 +1,14 @@
 import logging
 
-import gymnasium as gym
+import torch
 
 import hydra
 from omegaconf import DictConfig
 
+from src.agent import Agent
 from src.playground import Playground
-from src.util import (
-    AgentConfig,
-    AgentsEnum,
-    generate_agent_type,
-    generate_env,
-)
+from src.util_cls import AgentConfig
+from src.util_fn import generate_agent, generate_env
 
 
 def get_config_str(cfg: dict) -> str:
@@ -57,6 +54,15 @@ def main(cfg: DictConfig):
     # Game: Gym Environment.
     env = generate_env(str(cfg.env.env_name))
 
+    # Number of state observations.
+    state_size = env.observation_space.shape[0]
+
+    # Number of actions from gym action space.
+    action_size = env.action_space.n
+
+    # Whether we run our model on a cpu or gpu (cuda only).
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     # Setup AgentConfig.
     agent_config = AgentConfig(
         hidden_1_size=cfg.neural_net.hidden_nodes_1,
@@ -74,11 +80,22 @@ def main(cfg: DictConfig):
         batch_size=cfg.env.batch_size,
     )
 
-    # Setup a Playground with an Agent.
-    playground = Playground(
-        gym_env=env,
-        agent_type=generate_agent_type(cfg.agent.agent_type),
+    # Setup Agent.
+    agent: Agent = generate_agent(
         weights_file=cfg.agent.weights_file,
+        device=device,
+        agnt=cfg.agent.agent_type,
+        config=agent_config,
+        state_size=state_size,
+        action_size=action_size,
+    )
+
+    # Setup a Playground with the Agent.
+    playground: Playground = Playground(
+        gym_env=env,
+        weights_file=cfg.agent.weights_file,
+        device=device,
+        agent=agent,
         config=agent_config,
     )
 

@@ -8,18 +8,15 @@ import torch.nn as nn
 import torch.optim as optim
 
 from src.agent import Agent
-from src.dueling_dqn.dueling_dqn_model import DuelingDQNModel
+from src.rainbow_dqn.rainbow_dqn_model import RainbowDQNModel
 from src.replay_memory import ReplayMemory
 from src.util_cls import AgentConfig, Experience
 
 
-# Note we could just use DQNAgent as base class, but want to test if this
-# codebase is modular and clean.
-class DuelingDQNAgent(Agent):
+class RainbowDQNAgent(Agent):
     """
-    Dueling Deep Q-Network (Dueling DQN) agent that uses a neural network to
-    approximate Q-values and trains the network using experience replay and
-    a target network.
+    Rainbow DQN agent that uses a neural network to approximate Q-values and
+    trains the network using experience replay and a target network.
 
     Args:
         state_size (int): Size of the state space.
@@ -62,7 +59,7 @@ class DuelingDQNAgent(Agent):
         self.memory = ReplayMemory(config.replay_mem_size)
 
         # Policy network
-        self.network = DuelingDQNModel(
+        self.network = RainbowDQNModel(
             state_size,
             action_size,
             hidden_1_size=config.hidden_nodes_1,
@@ -70,7 +67,7 @@ class DuelingDQNAgent(Agent):
         ).to(self.device)
 
         # Target network
-        self.target_network = DuelingDQNModel(
+        self.target_network = RainbowDQNModel(
             state_size,
             action_size,
             hidden_1_size=config.hidden_nodes_1,
@@ -292,10 +289,19 @@ class DuelingDQNAgent(Agent):
 
         # Compute the Q-values for the next state-actions pairs.
         next_state_values = torch.zeros(self.config.batch_size).to(self.device)
+        # Double DQN modification. Have the policy network first calculate
+        # the actions with the highest Q-values for the next state. Then we
+        # use the target network estimate the value of this action.
+        # By using the policy Q-network to select the action and the target
+        # Q-network estimate its value, we can reduce the overestimation of
+        # Q-values and improve the stability of the learning process.
         with torch.no_grad():
-            next_state_values[non_final_mask] = self.target_network(
-                next_state_batch
-            ).max(1)[0]
+            next_q_values = self.network(next_state_batch).to(self.device)
+            next_state_values[non_final_mask] = (
+                self.target_network(next_state_batch)
+                .gather(1, next_q_values.argmax(dim=1, keepdim=True))
+                .squeeze(1)
+            )
 
         # Compute the expected Q-values using the Bellman equation.
         expected_q_values = reward_batch + (next_state_values * self.config.gamma)
@@ -314,3 +320,7 @@ class DuelingDQNAgent(Agent):
 
         # Update the network with the gradients.
         self.optimizer.step()
+
+        # Noisy net - reset noise.
+        self.network.reset_noise()
+        self.target_network.reset_noise()

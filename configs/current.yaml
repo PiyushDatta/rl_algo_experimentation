@@ -20,9 +20,9 @@ env:
     num_save_weights: 50
     batch_size: 128
     train: true
-    plot_training: true
+    plot_training: false
     training_episodes: 1000
     validate: true
-    plot_validation: true
+    plot_validation: false
     validating_episodes: 100
     logging_level: "INFO"
